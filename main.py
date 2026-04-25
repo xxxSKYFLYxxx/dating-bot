@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
@@ -7,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from config import BOT_TOKEN
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 import database as db
 
 logging.basicConfig(level=logging.INFO)
