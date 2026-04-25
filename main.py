@@ -7,8 +7,12 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.exceptions import TelegramNetworkError
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN not set")
+
 import database as db
 
 logging.basicConfig(level=logging.INFO)
@@ -364,7 +368,15 @@ async def handle_message(message: types.Message):
 async def main():
     db.init_db()
     logger.info("Bot started")
-    await dp.start_polling(bot)
+    while True:
+        try:
+            await dp.start_polling(bot)
+        except TelegramNetworkError as e:
+            logger.error(f"Network error: {e}")
+            await asyncio.sleep(5)
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
