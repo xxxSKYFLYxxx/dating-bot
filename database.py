@@ -1,6 +1,8 @@
 import sqlite3
+import os
 from datetime import datetime
-from config import DATABASE_PATH
+
+DATABASE_PATH = os.getenv("DATABASE_PATH", "/app/data/dating.db")
 
 
 def init_db():
