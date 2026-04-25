@@ -154,9 +154,9 @@ async def cmd_profile(message: types.Message):
     text = f"👤 {user[1]}, {user[2]} лет\n\n{user[5]}"
     
     if user[6]:
-        await message.answer_photo(user[6], caption=text)
+        await message.answer_photo(user[6], caption=text, reply_markup=get_main_keyboard())
     else:
-        await message.answer(text)
+        await message.answer(text, reply_markup=get_main_keyboard())
 
 
 @dp.message(Command("search"))
@@ -198,7 +198,21 @@ async def callback_like(callback: types.CallbackQuery):
         await bot.send_message(user_id, "Это взаимная симпатия! 💕 Теперь вы можете общаться анонимно.")
         await bot.send_message(liked_user_id, "Это взаимная симпатия! 💕 Теперь вы можете общаться анонимно.")
     
-    await callback.message.answer("❤️ лайк отправлен! Смотри дальше:", reply_markup=get_main_keyboard())
+    user = db.get_user(user_id)
+    profiles = db.get_active_profiles(user_id, user[4])
+    
+    if profiles:
+        profile_id = profiles[0]
+        profile = db.get_user(profile_id)
+        text = f"👤 {profile[1]}, {profile[2]} лет\n\n{profile[5]}"
+        
+        if profile[6]:
+            await callback.message.answer_photo(profile[6], caption=text, reply_markup=get_like_keyboard(profile_id))
+        else:
+            await callback.message.answer(text, reply_markup=get_like_keyboard(profile_id))
+    else:
+        await callback.message.answer("❤️ Лайк отправлен! Анкет больше нет.", reply_markup=get_main_keyboard())
+    
     await callback.answer()
 
 
@@ -210,8 +224,21 @@ async def callback_next(callback: types.CallbackQuery):
     profiles = db.get_active_profiles(user_id, user[4])
     
     if not profiles:
-        await callback.message.answer("Нет больше анкет.")
+        await callback.message.answer("Нет больше анкет.", reply_markup=get_main_keyboard())
         await callback.answer()
+        return
+    
+    profile_id = profiles[0]
+    profile = db.get_user(profile_id)
+    
+    text = f"👤 {profile[1]}, {profile[2]} лет\n\n{profile[5]}"
+    
+    if profile[6]:
+        await callback.message.answer_photo(profile[6], caption=text, reply_markup=get_like_keyboard(profile_id))
+    else:
+        await callback.message.answer(text, reply_markup=get_like_keyboard(profile_id))
+    
+    await callback.answer()
         return
     
     profile_id = profiles[0]
@@ -247,9 +274,9 @@ async def callback_my_profile(callback: types.CallbackQuery):
     text = f"👤 {user[1]}, {user[2]} лет\n\n{user[5]}"
     
     if user[6]:
-        await callback.message.answer_photo(user[6], caption=text)
+        await callback.message.answer_photo(user[6], caption=text, reply_markup=get_main_keyboard())
     else:
-        await callback.message.answer(text)
+        await callback.message.answer(text, reply_markup=get_main_keyboard())
     
     await callback.answer()
 
@@ -281,6 +308,12 @@ async def callback_search(callback: types.CallbackQuery):
     else:
         await callback.message.answer(text, reply_markup=get_like_keyboard(profile_id))
     
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "stop_search")
+async def callback_stop_search(callback: types.CallbackQuery):
+    await callback.message.answer("Поиск завершён", reply_markup=get_main_keyboard())
     await callback.answer()
 
 
