@@ -234,7 +234,84 @@ async def cmd_stop(message: types.Message):
     await message.answer("Анкета удалена. Напиши /start чтобы создать новую.")
 
 
-@dp.message()
+@dp.callback_query(F.data == "my_profile")
+async def callback_my_profile(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    user = db.get_user(user_id)
+    
+    if not user or not user[7]:
+        await callback.message.answer("У тебя нет анкеты. Напиши /start для регистрации.")
+        await callback.answer()
+        return
+    
+    text = f"👤 {user[1]}, {user[2]} лет\n\n{user[5]}"
+    
+    if user[6]:
+        await callback.message.answer_photo(user[6], caption=text)
+    else:
+        await callback.message.answer(text)
+    
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "search")
+async def callback_search(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    user = db.get_user(user_id)
+    
+    if not user or not user[7]:
+        await callback.message.answer("У тебя нет анкеты. Напиши /start для регистрации.")
+        await callback.answer()
+        return
+    
+    profiles = db.get_active_profiles(user_id, user[4])
+    
+    if not profiles:
+        await callback.message.answer("Нет анкет для просмотра. Попробуй позже!")
+        await callback.answer()
+        return
+    
+    profile_id = profiles[0]
+    profile = db.get_user(profile_id)
+    
+    text = f"👤 {profile[1]}, {profile[2]} лет\n\n{profile[5]}"
+    
+    if profile[6]:
+        await callback.message.answer_photo(profile[6], caption=text, reply_markup=get_like_keyboard(profile_id))
+    else:
+        await callback.message.answer(text, reply_markup=get_like_keyboard(profile_id))
+    
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "delete")
+async def callback_delete(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    db.deactivate_user(user_id)
+    await callback.message.answer("Анкета удалена. Напиши /start чтобы создать новую.")
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "edit")
+async def callback_edit(callback: types.CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    user = db.get_user(user_id)
+    
+    if not user or not user[7]:
+        await callback.message.answer("У тебя нет анкеты. Напиши /start для регистрации.")
+        await callback.answer()
+        return
+    
+    await callback.message.answer("Что хочешь изменить?\n\nВведи новое имя:")
+    await state.set_state(Form.name)
+    await callback.answer()
+
+
+@dp.message(Form.name)
+async def form_name_edit(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await message.answer("Новый возраст?")
+    await state.set_state(Form.age)
 async def handle_message(message: types.Message):
     user_id = message.from_user.id
     user = db.get_user(user_id)
