@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: dating-bot
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py"
+    envVars:
+      - key: BOT_TOKEN
+        value: 8725137846:AAEpCAjUyLE9XHtdVoG-cLcI9znYXp9ktmM
+      - key: PYTHON_VERSION
+        value: 3.12.13
+    healthCheckPath: /
+    numInstances: 1
